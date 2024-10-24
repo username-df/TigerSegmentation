@@ -28,7 +28,7 @@ class TigerDataset(Dataset):
 
 
         if self.tf_input and self.tf_target:
-            rand = randint(0, 10000)
+            rand = randint(0, 10001)
             
             torch.manual_seed(rand)
             input_img = self.tf_input(input_img)

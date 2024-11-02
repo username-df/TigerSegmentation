@@ -57,8 +57,8 @@ class Unet(nn.Module):
         x9 = torch.cat(tensors=(x9, skip), dim=1)
         x9 = (doubleconv(128, 64))(x9)
 
-        # 1x1 Conv to turn 64 channels into 2 classes
-        x10 = nn.Conv2d(64, 2, kernel_size=1, stride=1)(x9)
+        # 1x1 Conv to turn 64 channels into 1 class
+        x10 = nn.Conv2d(64, 1, kernel_size=1, stride=1)(x9)
         
         return x10
     

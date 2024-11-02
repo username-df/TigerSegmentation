@@ -10,55 +10,77 @@ class Unet(nn.Module):
     def __init__(self):
         super().__init__()
         self.maxpool = nn.MaxPool2d(stride=2, kernel_size=2)
+        
+        # Down convolutions
+        self.downconv1 = doubleconv(3, 64)
+        self.downconv2 = doubleconv(64, 128)
+        self.downconv3 = doubleconv(128, 256)
+        self.downconv4 = doubleconv(256, 512)
+        self.downconv5 = doubleconv(512, 1024)
+
+        # Transpose convolutions
+        self.transconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
+        self.transconv2 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.transconv3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.transconv4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+
+        # Up convolutions
+        self.upconv1 = doubleconv(1024, 512)
+        self.upconv2 = doubleconv(512, 256)
+        self.upconv3 = doubleconv(256, 128)
+        self.upconv4 = doubleconv(128, 64)
+
+        # 1x1 convolution
+        self.onebyone = nn.Conv2d(64, 1, kernel_size=1, stride=1)
 
     def down(self, x):
-        x1 = (doubleconv(3, 64))(x)
+        x1 = self.downconv1(x)
 
         x2 = self.maxpool(x1)
-        x2 = (doubleconv(64, 128))(x2)
+        x2 = self.downconv2(x2)
 
         x3 = self.maxpool(x2)
-        x3 = (doubleconv(128, 256))(x3)
+        x3 = self.downconv3(x3)
 
         x4 = self.maxpool(x3)
-        x4 = (doubleconv(256, 512))(x4)
+        x4 = self.downconv4(x4)
 
         x5 = self.maxpool(x4)
-        x5 = (doubleconv(512, 1024))(x5)
+        x5 = self.downconv5(x5)
 
         return [x1, x2, x3, x4, x5]
     
     def up(self, connect):
-        x6 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)(connect[4])
+        x6 = self.transconv1(connect[4])
         # skip connection from x4  
         skip = crop_skip(connect[3], x6)
               
         x6 = torch.cat(tensors=(x6, skip), dim=1)
-        x6 = (doubleconv(1024, 512))(x6)
+        x6 = self.upconv1(x6)
 
-        x7 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)(x6)
+        x7 = self.transconv2(x6)
         # skip connection from x3 
         skip = crop_skip(connect[2], x7)
 
         x7 = torch.cat(tensors=(x7, skip), dim=1)
-        x7 = (doubleconv(512, 256))(x7)
+        x7 = self.upconv2(x7)
 
-        x8 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)(x7)
+        x8 = self.transconv3(x7)
         # skip connection from x2
         skip = crop_skip(connect[1], x8)  
 
         x8 = torch.cat(tensors=(x8, skip), dim=1)
-        x8 = (doubleconv(256, 128))(x8)
+        x8 = self.upconv3(x8)
 
-        x9 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)(x8)
+        x9 = self.transconv4(x8)
         # skip connection from x1
         skip = crop_skip(connect[0], x9)  
 
         x9 = torch.cat(tensors=(x9, skip), dim=1)
-        x9 = (doubleconv(128, 64))(x9)
+        x9 = self.upconv4(x9)
 
         # 1x1 Conv to turn 64 channels into 1 class
-        x10 = nn.Conv2d(64, 1, kernel_size=1, stride=1)(x9)
+        x10 = self.onebyone(x9)
         
         return x10
     

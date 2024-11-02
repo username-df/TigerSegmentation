@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
+import os
 
 class Unet(nn.Module):
     def __init__(self):
@@ -65,6 +66,30 @@ class Unet(nn.Module):
         skip_connection = self.down(x)
         x = self.up(skip_connection)
         return x
+
+    def save(self, file_name='saved.pth'):
+        model_folder_path = './models'
+
+        if not os.path.exists(model_folder_path):
+            os.makedirs(model_folder_path)
+
+        file_name = os.path.join(model_folder_path, file_name)
+        
+        torch.save({
+            'model_state_dict': self.state_dict(), 
+            }, file_name)
+
+    def load(self, file_name='saved.pth'):
+        model_folder_path = './model'
+        file_path = os.path.join(model_folder_path, file_name)
+
+        if os.path.exists(file_path):
+            load_model = torch.load(file_path)
+
+            self.load_state_dict(load_model['model_state_dict'])
+            
+        else:
+            print("No saved model found")
 
 # Conv2d -> ReLU -> Conv2d -> ReLU
 def doubleconv(in_c, out_c):

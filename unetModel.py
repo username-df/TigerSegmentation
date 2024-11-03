@@ -1,10 +1,16 @@
 import torch
 from torch import nn
-import numpy as np
-import matplotlib.pyplot as plt
-from PIL import Image
-from torchvision import transforms
+import torch.nn.init as init
 import os
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+
+# Crop skip connection so that it can be concatenated with the ConvTranspose2d output
+def crop_skip(skip, xn):
+    curr_size = skip.size()[2]
+    delta = (curr_size - xn.size()[2]) // 2
+
+    cropped = skip[:, :, delta:curr_size-delta, delta:curr_size-delta]
+    return cropped
 
 class Unet(nn.Module):
     def __init__(self):
@@ -12,11 +18,11 @@ class Unet(nn.Module):
         self.maxpool = nn.MaxPool2d(stride=2, kernel_size=2)
         
         # Down convolutions
-        self.downconv1 = doubleconv(3, 64)
-        self.downconv2 = doubleconv(64, 128)
-        self.downconv3 = doubleconv(128, 256)
-        self.downconv4 = doubleconv(256, 512)
-        self.downconv5 = doubleconv(512, 1024)
+        self.downconv1 = self.doubleconv(3, 64)
+        self.downconv2 = self.doubleconv(64, 128)
+        self.downconv3 = self.doubleconv(128, 256)
+        self.downconv4 = self.doubleconv(256, 512)
+        self.downconv5 = self.doubleconv(512, 1024)
 
         # Transpose convolutions
         self.transconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
@@ -25,13 +31,37 @@ class Unet(nn.Module):
         self.transconv4 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
 
         # Up convolutions
-        self.upconv1 = doubleconv(1024, 512)
-        self.upconv2 = doubleconv(512, 256)
-        self.upconv3 = doubleconv(256, 128)
-        self.upconv4 = doubleconv(128, 64)
+        self.upconv1 = self.doubleconv(1024, 512)
+        self.upconv2 = self.doubleconv(512, 256)
+        self.upconv3 = self.doubleconv(256, 128)
+        self.upconv4 = self.doubleconv(128, 64)
 
         # 1x1 convolution
         self.onebyone = nn.Conv2d(64, 2, kernel_size=1, stride=1)
+
+        self.a_val = 0
+        self._initialize_weights()
+
+    # Conv2d -> ReLU -> Conv2d -> ReLU
+    def doubleconv(self, in_c, out_c):
+        conv = nn.Sequential(
+            nn.Conv2d(in_c, out_c, kernel_size=3),
+            nn.PReLU(num_parameters=out_c, device=device),
+            nn.Conv2d(out_c, out_c, kernel_size=3),
+            nn.PReLU(num_parameters=out_c, device=device)
+        )
+        return conv
+
+    def _initialize_weights(self):
+        for layer in self.modules():
+            if isinstance(layer, nn.PReLU):
+               self.a_val = layer.weight.mean().item()
+                
+            if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.ConvTranspose2d):
+                # Kaiming initialization for layers with PReLU activation
+                init.kaiming_uniform_(layer.weight, a=self.a_val, mode='fan_in', nonlinearity='leaky_relu')
+                if layer.bias is not None:
+                    init.zeros_(layer.bias)
 
     def down(self, x):
         x1 = self.downconv1(x)
@@ -101,8 +131,8 @@ class Unet(nn.Module):
             'model_state_dict': self.state_dict(), 
             }, file_name)
 
-    def load(self, file_name='saved.pth'):
-        model_folder_path = './model'
+    def load(self, folder_name= 'models', file_name='saved.pth'):
+        model_folder_path = f'./{folder_name}'
         file_path = os.path.join(model_folder_path, file_name)
 
         if os.path.exists(file_path):
@@ -112,21 +142,3 @@ class Unet(nn.Module):
             
         else:
             print("No saved model found")
-
-# Conv2d -> ReLU -> Conv2d -> ReLU
-def doubleconv(in_c, out_c):
-    conv = nn.Sequential(
-        nn.Conv2d(in_c, out_c, kernel_size=3),
-        nn.ReLU(inplace=True),
-        nn.Conv2d(out_c, out_c, kernel_size=3),
-        nn.ReLU(inplace=True)
-    )
-    return conv
-
-# Crop skip connection so that it can be concatenated with the ConvTranspose2d output
-def crop_skip(skip, xn):
-    curr_size = skip.size()[2]
-    delta = (curr_size - xn.size()[2]) // 2
-
-    cropped = skip[:, :, delta:curr_size-delta, delta:curr_size-delta]
-    return cropped

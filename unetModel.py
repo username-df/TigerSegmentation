@@ -31,7 +31,7 @@ class Unet(nn.Module):
         self.upconv4 = doubleconv(128, 64)
 
         # 1x1 convolution
-        self.onebyone = nn.Conv2d(64, 1, kernel_size=1, stride=1)
+        self.onebyone = nn.Conv2d(64, 2, kernel_size=1, stride=1)
 
     def down(self, x):
         x1 = self.downconv1(x)
@@ -79,7 +79,7 @@ class Unet(nn.Module):
         x9 = torch.cat(tensors=(x9, skip), dim=1)
         x9 = self.upconv4(x9)
 
-        # 1x1 Conv to turn 64 channels into 1 class
+        # 1x1 Conv to turn 64 channels into 2 classes
         x10 = self.onebyone(x9)
         
         return x10

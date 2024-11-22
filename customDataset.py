@@ -37,6 +37,14 @@ tf_input = transforms.Compose([
                         std=[0.25618886947631836, 0.23313170671463013, 0.2274409383535385])
 ])
 
+tf_prdin = transforms.Compose([
+    transforms.Resize((388,388)),
+    PadToSquare(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.40497827529907227, 0.3686119616031647, 0.29055872559547424], 
+                        std=[0.25618886947631836, 0.23313170671463013, 0.2274409383535385])
+])
+
 tf_target = transforms.Compose([
     transforms.RandomRotation(36),
     transforms.RandomHorizontalFlip(),

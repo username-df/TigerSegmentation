@@ -1,2 +1,6 @@
 imageData
 collectData
+__pycache__
+models
+static
+templates

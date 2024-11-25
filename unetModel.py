@@ -136,7 +136,7 @@ class Unet(nn.Module):
         file_path = os.path.join(model_folder_path, file_name)
 
         if os.path.exists(file_path):
-            load_model = torch.load(file_path)
+            load_model = torch.load(file_path, map_location=torch.device('cpu'))
 
             self.load_state_dict(load_model['model_state_dict'])
             

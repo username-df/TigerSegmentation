@@ -1,17 +1,38 @@
 import numpy as np
 import torch
 from torchvision import transforms
-from flask import Flask, render_template, request,  url_for
+from flask import Flask, render_template, request
 from io import BytesIO
 import base64
 from PIL import Image
 from unetModel import Unet
-from customDataset import tf_prdin
 
 app = Flask(__name__)
 model = Unet()
 model.load(file_name='saved_1241.pth')
 model.to('cpu')
+
+class PadToSquare:
+    def __call__(self, img: Image):
+        width, height = img.size
+        target_size = 572
+        
+        new_img = Image.new("RGB", (target_size, target_size), (0, 0, 0))
+  
+        x_offset = (target_size - width) // 2
+        y_offset = (target_size - height) // 2
+        
+        new_img.paste(img, (x_offset, y_offset))
+        
+        return new_img
+    
+tf_prdin = transforms.Compose([
+    transforms.Resize((388,388)),
+    PadToSquare(),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.40497827529907227, 0.3686119616031647, 0.29055872559547424], 
+                        std=[0.25618886947631836, 0.23313170671463013, 0.2274409383535385])
+])
 
 @app.route('/')
 def start():
@@ -77,4 +98,4 @@ def upload():
     return render_template('uploadpage.html', final_img=final_img)
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0', port=8080)

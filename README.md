@@ -1,5 +1,9 @@
 ## Project Introduction
 
+<div style="display: flex;">
+  <img src="https://github.com/user-attachments/assets/5e42525b-54a6-4eda-865a-3da02b067953" width="300" style="margin-right: 20px;" />
+</div>
+
 Implementation of the [Unet architecture](https://arxiv.org/pdf/1505.04597) for image segmentation, coded using PyTorch. The model performs binary semantic segmentation on images of tigers. 
 
 Link: http://54.82.65.225:80

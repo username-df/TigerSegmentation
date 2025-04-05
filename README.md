@@ -6,8 +6,7 @@
 
 Implementation of the [Unet architecture](https://arxiv.org/pdf/1505.04597) for image segmentation, coded using PyTorch. The model performs binary semantic segmentation on images of tigers. 
 
-Link: http://54.82.65.225:80
-
+Link: http://54.82.65.225:80\\
 ## Training
 
 The model was trained using a custom dataset that I created by collecting around 400 publicly available images of tigers from Google Images, I then created binary masks for each image by using Adobe photoshop. I used data augmentation (rotating, flipping, etc) on each image/binary mask pair to increase the dataset size to around 800.
